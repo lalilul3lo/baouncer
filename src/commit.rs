@@ -1,3 +1,5 @@
+use std::{io, process::Command};
+
 pub struct CommitBuilder {
     commit_type: Option<String>,
     scope: Option<String>,
@@ -48,7 +50,7 @@ impl CommitBuilder {
         self
     }
 
-    pub fn build(&self) -> String {
+    fn build(&self) -> String {
         let mut commit = String::new();
 
         if let Some(commit_type) = &self.commit_type {
@@ -81,10 +83,86 @@ impl CommitBuilder {
 
         commit
     }
+
+    pub fn write(&self) -> io::Result<()> {
+        let commit = self.build();
+
+        if commit.is_empty() {
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidInput,
+                "Commit message is empty",
+            ));
+        }
+
+        let output = Command::new("git")
+            .args(&["commit", "-m", &commit])
+            .output()?;
+
+        if output.status.success() {
+            Ok(())
+        } else {
+            let error_message = String::from_utf8_lossy(&output.stderr);
+            Err(io::Error::new(io::ErrorKind::Other, error_message))
+        }
+    }
 }
 
 #[test]
-fn test_commit_builder_with_breaking_change() {
+fn test_add_type() {
+    let commit = CommitBuilder::new().add_type("feat".to_string()).build();
+
+    assert_eq!(commit, "feat");
+}
+#[test]
+fn test_add_scope() {
+    let commit = CommitBuilder::new()
+        .add_type("feat".to_string())
+        .add_scope("commit".to_string())
+        .build();
+
+    assert_eq!(commit, "feat(commit)");
+}
+#[test]
+fn test_add_subject() {
+    let commit = CommitBuilder::new()
+        .add_type("feat".to_string())
+        .add_scope("commit".to_string())
+        .add_subject("add commit builder".to_string())
+        .build();
+
+    assert_eq!(commit, "feat(commit): add commit builder");
+}
+#[test]
+fn test_add_body() {
+    let commit = CommitBuilder::new()
+        .add_type("feat".to_string())
+        .add_scope("commit".to_string())
+        .add_subject("add commit builder".to_string())
+        .add_body("add commit builder".to_string())
+        .build();
+
+    assert_eq!(
+        commit,
+        "feat(commit): add commit builder\n\nadd commit builder"
+    );
+}
+#[test]
+fn test_add_breaking_change() {
+    let commit = CommitBuilder::new()
+        .add_type("feat".to_string())
+        .add_scope("commit".to_string())
+        .add_subject("add commit builder".to_string())
+        .add_body("add commit builder".to_string())
+        .add_breaking_change("add commit builder".to_string())
+        .build();
+
+    assert_eq!(
+        commit,
+        "feat(commit)!: add commit builder\n\nadd commit builder\n\nBREAKING CHANGE: add commit builder"
+    );
+}
+#[test]
+fn test_add_issues() {
     let commit = CommitBuilder::new()
         .add_type("feat".to_string())
         .add_scope("commit".to_string())
@@ -97,21 +175,5 @@ fn test_commit_builder_with_breaking_change() {
     assert_eq!(
         commit,
         "feat(commit)!: add commit builder\n\nadd commit builder\n\nfixes add commit builder\n\nBREAKING CHANGE: add commit builder"
-    );
-}
-
-#[test]
-fn test_commit_builder_without_breaking_change() {
-    let commit = CommitBuilder::new()
-        .add_type("feat".to_string())
-        .add_scope("commit".to_string())
-        .add_subject("add commit builder".to_string())
-        .add_body("add commit builder".to_string())
-        .add_issues("add commit builder".to_string())
-        .build();
-
-    assert_eq!(
-        commit,
-        "feat(commit): add commit builder\n\nadd commit builder\n\nfixes add commit builder"
     );
 }

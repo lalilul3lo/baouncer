@@ -281,5 +281,12 @@ fn main() {
         _ => unreachable!(),
     }
 
-    println!("{}", commit_builder.build());
+    match commit_builder.write() {
+        Ok(_) => {
+            println!("🎉 Commit created successfully! 🎉");
+        }
+        Err(err) => {
+            println!("{}", err);
+        }
+    }
 }
