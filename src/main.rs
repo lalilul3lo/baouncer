@@ -1,6 +1,6 @@
 mod commit;
 use clap::Command;
-use commit::CommitBuilder;
+use commit::{save_commit, CommitBuilder};
 use inquire::{Confirm, Select, Text};
 
 fn cli() -> Command {
@@ -133,23 +133,23 @@ fn main() {
             ]),
         ),
         Question::new(
-            "What is the scope of this change?", // limit to a single word
+            "scope: ", // limit to a single word
             QuestionData::Scope,
         ),
         Question::new(
-            "What is the subject of this commit?", // is there a character limit?
+            "message: ", // is there a character limit?
             QuestionData::Subject,
         ),
         Question::new(
-            "What is the body of the commit?", // is there a character limit?
+            "body: ", // is there a character limit?
             QuestionData::Body,
         ),
         Question::new(
-            "Is this a breaking change", // is there a character limit?
+            "breaking change: ", // is there a character limit?
             QuestionData::IsBreaking,
         ),
         Question::new(
-            "Will thie commit affect any issues?", // is there a character limit?
+            "issues (comma separated): ", // is there a character limit?
             QuestionData::Issues,
         ),
     ];
@@ -195,25 +195,19 @@ fn main() {
                         }
                     }
                     QuestionType::Scope => {
-                        let answer = Confirm::new("Is there a scope? [y/n]").prompt();
+                        let answer = Text::new(&question.description).prompt();
 
                         match answer {
-                            Ok(is_scope_present) => {
-                                if is_scope_present {
-                                    let ans = Text::new("scope: ").prompt();
-                                    match ans {
-                                        Ok(scope) => {
-                                            commit_builder.add_scope(scope);
-                                        }
-                                        Err(_) => println!("There was an error, please try again"),
-                                    }
+                            Ok(scope) => {
+                                if !scope.is_empty() {
+                                    commit_builder.add_scope(scope);
                                 }
                             }
                             Err(_) => println!("There was an error, please try again"),
                         }
                     }
                     QuestionType::Subject => {
-                        let ans = Text::new("Commit message: ").prompt();
+                        let ans = Text::new(&question.description).prompt();
                         match ans {
                             Ok(subject) => {
                                 commit_builder.add_subject(subject);
@@ -222,54 +216,33 @@ fn main() {
                         }
                     }
                     QuestionType::Body => {
-                        let ans = Confirm::new("Is there a body? [y/n] ").prompt();
+                        let ans = Text::new(&question.description).prompt();
                         match ans {
-                            Ok(is_body_present) => {
-                                if is_body_present {
-                                    let ans = Text::new("body: ").prompt();
-                                    match ans {
-                                        Ok(body) => {
-                                            commit_builder.add_body(body);
-                                        }
-                                        Err(_) => println!("There was an error, please try again"),
-                                    }
+                            Ok(body) => {
+                                if !body.is_empty() {
+                                    commit_builder.add_body(body);
                                 }
                             }
                             Err(_) => println!("There was an error, please try again"),
                         }
                     }
                     QuestionType::IsBreaking => {
-                        let ans = Confirm::new("Is this a breaking change? [y/n] ").prompt();
+                        let ans = Text::new(&question.description).prompt();
                         match ans {
-                            Ok(is_breaking) => {
-                                if is_breaking {
-                                    let ans = Text::new("body: ").prompt();
-
-                                    match ans {
-                                        Ok(body) => {
-                                            commit_builder.add_breaking_change(body);
-                                        }
-                                        Err(_) => println!("There was an error, please try again"),
-                                    }
+                            Ok(breaking_change_body) => {
+                                if !breaking_change_body.is_empty() {
+                                    commit_builder.add_breaking_change(breaking_change_body);
                                 }
                             }
                             Err(_) => println!("There was an error, please try again"),
                         }
                     }
                     QuestionType::Issues => {
-                        let ans =
-                            Confirm::new("Will this commit affect any issues? [y/n] ").prompt();
+                        let ans = Text::new(&question.description).prompt();
                         match ans {
-                            Ok(is_issue) => {
-                                if is_issue {
-                                    let ans = Text::new("issues: ").prompt();
-
-                                    match ans {
-                                        Ok(issues) => {
-                                            commit_builder.add_issues(issues);
-                                        }
-                                        Err(_) => println!("There was an error, please try again"),
-                                    }
+                            Ok(issues) => {
+                                if !issues.is_empty() {
+                                    commit_builder.add_issues(issues);
                                 }
                             }
                             Err(_) => println!("There was an error, please try again"),
@@ -281,12 +254,24 @@ fn main() {
         _ => unreachable!(),
     }
 
-    match commit_builder.write() {
-        Ok(_) => {
-            println!("🎉 Commit created successfully! 🎉");
+    let commit = commit_builder.build();
+
+    match Confirm::new(&format!(
+        "Commit message:\n\n👇\n\n{}\n\n👆\n\nDoes this look good? [y/n]",
+        &commit
+    ))
+    .prompt()
+    {
+        Ok(answer) => {
+            if answer {
+                match save_commit(commit) {
+                    Ok(_) => println!("\n\nCommit saved!"),
+                    Err(error) => {
+                        println!("\n\nThere was an error saving the commit: {}", error)
+                    }
+                }
+            }
         }
-        Err(err) => {
-            println!("{}", err);
-        }
+        Err(_) => println!("There was an error, please try again"),
     }
 }
