@@ -117,8 +117,8 @@ impl CommitBuilder {
         if let Some(issues) = &self.issues {
             let numbers: Vec<&str> = issues.split(',').collect();
             let formatted_numbers: Vec<String> =
-                numbers.iter().map(|&n| format!("#{}", n)).collect();
-            let result = format!("closes {}", formatted_numbers.join(", "));
+                numbers.iter().map(|&n| format!("closes #{}", n)).collect();
+            let result = format!("{}", formatted_numbers.join(", "));
 
             commit.push_str(&format!("\n\n{}", result));
         }
@@ -244,6 +244,6 @@ fn test_add_issues() {
 
     assert_eq!(
         commit,
-        "feat(commit)!: add commit builder\n\nadd commit builder\n\ncloses #1, #2, #3\n\nBREAKING CHANGE: add commit builder"
+        "feat(commit)!: add commit builder\n\nadd commit builder\n\ncloses #1, closes #2, closes #3\n\nBREAKING CHANGE: add commit builder"
     );
 }
