@@ -50,7 +50,7 @@ impl CommitBuilder {
         self
     }
 
-    fn build(&self) -> String {
+    pub fn build(&self) -> String {
         let mut commit = String::new();
 
         if let Some(commit_type) = &self.commit_type {
@@ -74,7 +74,12 @@ impl CommitBuilder {
         }
 
         if let Some(issues) = &self.issues {
-            commit.push_str(&format!("\n\nfixes {}", issues));
+            let numbers: Vec<&str> = issues.split(',').collect();
+            let formatted_numbers: Vec<String> =
+                numbers.iter().map(|&n| format!("#{}", n)).collect();
+            let result = format!("closes {}", formatted_numbers.join(", "));
+
+            commit.push_str(&format!("\n\n{}", result));
         }
 
         if let Some(breaking_change) = &self.breaking_change {
@@ -83,27 +88,38 @@ impl CommitBuilder {
 
         commit
     }
+}
 
-    pub fn write(&self) -> io::Result<()> {
-        let commit = self.build();
+pub fn save_commit(commit: String) -> io::Result<()> {
+    let output_status = Command::new("git").args(["--no-pager", "diff"]).output()?;
 
-        if commit.is_empty() {
-            return Err(io::Error::new(
-                io::ErrorKind::InvalidInput,
-                "Commit message is empty",
-            ));
-        }
+    let status_message = String::from_utf8_lossy(&output_status.stdout)
+        .trim()
+        .to_string();
 
-        let output = Command::new("git")
-            .args(&["commit", "-m", &commit])
-            .output()?;
+    if !status_message.is_empty() {
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidInput,
+            "You have unstaged changes",
+        ));
+    }
 
-        if output.status.success() {
-            Ok(())
-        } else {
-            let error_message = String::from_utf8_lossy(&output.stderr);
-            Err(io::Error::new(io::ErrorKind::Other, error_message))
-        }
+    if commit.is_empty() {
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidInput,
+            "Commit message is empty",
+        ));
+    }
+
+    let output = Command::new("git")
+        .args(["commit", "-m", &commit])
+        .output()?;
+
+    if output.status.success() {
+        Ok(())
+    } else {
+        let error_message = String::from_utf8_lossy(&output.stderr);
+        Err(io::Error::new(io::ErrorKind::Other, error_message))
     }
 }
 
@@ -169,11 +185,11 @@ fn test_add_issues() {
         .add_subject("add commit builder".to_string())
         .add_body("add commit builder".to_string())
         .add_breaking_change("add commit builder".to_string())
-        .add_issues("add commit builder".to_string())
+        .add_issues("1,2,3".to_string())
         .build();
 
     assert_eq!(
         commit,
-        "feat(commit)!: add commit builder\n\nadd commit builder\n\nfixes add commit builder\n\nBREAKING CHANGE: add commit builder"
+        "feat(commit)!: add commit builder\n\nadd commit builder\n\ncloses #1, #2, #3\n\nBREAKING CHANGE: add commit builder"
     );
 }
