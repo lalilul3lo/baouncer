@@ -1,5 +1,6 @@
 use std::{io, process::Command};
 
+/// Struct representing the components of a Git commit message.
 pub struct CommitBuilder {
     commit_type: Option<String>,
     scope: Option<String>,
@@ -9,6 +10,9 @@ pub struct CommitBuilder {
     issues: Option<String>,
 }
 impl CommitBuilder {
+    /// Creates a new `CommitBuilder` instance.
+    ///
+    /// All fields are initialized to `None`.
     pub fn new() -> Self {
         Self {
             commit_type: None,
@@ -20,36 +24,73 @@ impl CommitBuilder {
         }
     }
 
+    /// Sets the commit type.
+    ///
+    /// # Arguments
+    ///
+    /// * `commit_type` - A string representing the type of commit (e.g., "feat", "fix").
     pub fn add_type(&mut self, commit_type: String) -> &mut Self {
         self.commit_type = Some(commit_type);
         self
     }
 
+    /// Sets the scope of the commit.
+    ///
+    /// # Arguments
+    ///
+    /// * `scope` - A string representing the scope of the commit.
     pub fn add_scope(&mut self, scope: String) -> &mut Self {
         self.scope = Some(scope);
         self
     }
 
+    /// Sets the commit subject.
+    ///
+    /// # Arguments
+    ///
+    /// * `subject` - A string representing the commit subject.
     pub fn add_subject(&mut self, subject: String) -> &mut Self {
         self.subject = Some(subject);
         self
     }
 
+    /// Sets the commit body.
+    ///
+    /// # Arguments
+    ///
+    /// * `body` - A string representing the commit body.
     pub fn add_body(&mut self, body: String) -> &mut Self {
         self.body = Some(body);
         self
     }
 
+    /// Sets the breaking change note.
+    ///
+    /// # Arguments
+    ///
+    /// * `breaking_change` - A string representing the breaking change note.
     pub fn add_breaking_change(&mut self, breaking_change: String) -> &mut Self {
         self.breaking_change = Some(breaking_change);
         self
     }
 
+    /// Sets the issues that are closed by this commit.
+    ///
+    /// # Arguments
+    ///
+    /// * `issues` - A string representing the issue numbers, separated by commas.
     pub fn add_issues(&mut self, issues: String) -> &mut Self {
         self.issues = Some(issues);
         self
     }
 
+    /// Builds the commit message string.
+    ///
+    /// This method constructs the commit message according to the set fields.
+    ///
+    /// # Returns
+    ///
+    /// Returns a string representing the complete commit message.
     pub fn build(&self) -> String {
         let mut commit = String::new();
 
@@ -90,6 +131,19 @@ impl CommitBuilder {
     }
 }
 
+/// Saves the commit message using `git commit`.
+///
+/// # Arguments
+///
+/// * `commit` - A string representing the complete commit message.
+///
+/// # Errors
+///
+/// Returns an error if there are unstaged changes or if the commit message is empty.
+///
+/// # Returns
+///
+/// Returns a `Result` indicating success or failure.
 pub fn save_commit(commit: String) -> io::Result<()> {
     let output_status = Command::new("git").args(["--no-pager", "diff"]).output()?;
 
