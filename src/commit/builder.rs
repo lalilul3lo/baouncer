@@ -1,5 +1,3 @@
-use std::{io, process::Command};
-
 /// Struct representing the components of a Git commit message.
 pub struct CommitBuilder {
     commit_type: Option<String>,
@@ -128,52 +126,6 @@ impl CommitBuilder {
         }
 
         commit
-    }
-}
-
-/// Saves the commit message using `git commit`.
-///
-/// # Arguments
-///
-/// * `commit` - A string representing the complete commit message.
-///
-/// # Errors
-///
-/// Returns an error if there are unstaged changes or if the commit message is empty.
-///
-/// # Returns
-///
-/// Returns a `Result` indicating success or failure.
-pub fn save_commit(commit: String) -> io::Result<()> {
-    let output_status = Command::new("git").args(["--no-pager", "diff"]).output()?;
-
-    let status_message = String::from_utf8_lossy(&output_status.stdout)
-        .trim()
-        .to_string();
-
-    if !status_message.is_empty() {
-        return Err(io::Error::new(
-            io::ErrorKind::InvalidInput,
-            "You have unstaged changes",
-        ));
-    }
-
-    if commit.is_empty() {
-        return Err(io::Error::new(
-            io::ErrorKind::InvalidInput,
-            "Commit message is empty",
-        ));
-    }
-
-    let output = Command::new("git")
-        .args(["commit", "-m", &commit])
-        .output()?;
-
-    if output.status.success() {
-        Ok(())
-    } else {
-        let error_message = String::from_utf8_lossy(&output.stderr);
-        Err(io::Error::new(io::ErrorKind::Other, error_message))
     }
 }
 

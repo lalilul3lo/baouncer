@@ -1,6 +1,9 @@
 mod commit;
 use clap::Command;
-use commit::{save_commit, CommitBuilder};
+use commit::{
+    builder::CommitBuilder,
+    writer::{CommitWriter, GitRunner},
+};
 use inquire::{Confirm, Select, Text};
 
 fn cli() -> Command {
@@ -264,10 +267,14 @@ fn main() {
     {
         Ok(answer) => {
             if answer {
-                match save_commit(commit) {
-                    Ok(_) => println!("\n\nCommit saved!"),
+                let runner = GitRunner::new();
+
+                let commit_writer = CommitWriter::new(runner);
+
+                match commit_writer.write_commit(commit) {
+                    Ok(_) => println!("\n\nCommit written!"),
                     Err(error) => {
-                        println!("\n\nThere was an error saving the commit: {}", error)
+                        println!("\n\nThere was an error writing the commit: {}", error)
                     }
                 }
             }
