@@ -1,5 +1,5 @@
 [package]
-name = "conventional_commit_cli"
+name = "baouncer"
 version = "0.0.0"
 edition = "2021"
 
