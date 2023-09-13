@@ -116,7 +116,7 @@ impl CommitBuilder {
             let numbers: Vec<&str> = issues.split(',').collect();
             let formatted_numbers: Vec<String> =
                 numbers.iter().map(|&n| format!("closes #{}", n)).collect();
-            let result = format!("{}", formatted_numbers.join(", "));
+            let result = formatted_numbers.join(", ").to_string();
 
             commit.push_str(&format!("\n\n{}", result));
         }
