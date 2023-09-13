@@ -1,10 +1,12 @@
 mod commit;
-use clap::Command;
+use clap::{arg, Command};
 use commit::{
     builder::CommitBuilder,
+    checker::{init_commit_msg_hook, parse_commit},
     writer::{CommitWriter, GitRunner},
 };
 use inquire::{Confirm, Select, Text};
+use std::process::exit;
 
 fn cli() -> Command {
     Command::new("cli")
@@ -13,6 +15,15 @@ fn cli() -> Command {
         .arg_required_else_help(true)
         .allow_external_subcommands(true)
         .subcommand(Command::new("commit").about("Create a conventional commit"))
+        .subcommand(
+            Command::new("commit-msg-hook")
+                .about("Create a pre-commit hook to check conventional commits"),
+        )
+        .subcommand(
+            Command::new("check-commit")
+                .about("Create a pre-commit hook to check conventional commits")
+                .args(vec![arg!(-m --message <MESSAGE>)]),
+        )
 }
 
 #[derive(Debug)]
@@ -157,12 +168,12 @@ fn main() {
         ),
     ];
 
-    let mut commit_builder = CommitBuilder::new();
-
     let matches = cli().get_matches();
 
     match matches.subcommand() {
         Some(("commit", _)) => {
+            let mut commit_builder = CommitBuilder::new();
+
             for question in questions {
                 match question.type_ {
                     QuestionType::Type { options } => {
@@ -253,32 +264,50 @@ fn main() {
                     }
                 }
             }
-        }
-        _ => unreachable!(),
-    }
+            let commit = commit_builder.build();
 
-    let commit = commit_builder.build();
+            match Confirm::new(&format!(
+                "Commit message:\n\n👇\n\n{}\n\n👆\n\nDoes this look good? [y/n]",
+                &commit
+            ))
+            .prompt()
+            {
+                Ok(answer) => {
+                    if answer {
+                        let runner = GitRunner::new();
 
-    match Confirm::new(&format!(
-        "Commit message:\n\n👇\n\n{}\n\n👆\n\nDoes this look good? [y/n]",
-        &commit
-    ))
-    .prompt()
-    {
-        Ok(answer) => {
-            if answer {
-                let runner = GitRunner::new();
+                        let commit_writer = CommitWriter::new(runner);
 
-                let commit_writer = CommitWriter::new(runner);
-
-                match commit_writer.write_commit(commit) {
-                    Ok(_) => println!("\n\nCommit written!"),
-                    Err(error) => {
-                        println!("\n\nThere was an error writing the commit: {}", error)
+                        match commit_writer.write_commit(commit) {
+                            Ok(_) => println!("\n\nCommit written!"),
+                            Err(error) => {
+                                println!("\n\nThere was an error writing the commit: {}", error)
+                            }
+                        }
                     }
                 }
+                Err(_) => println!("There was an error, please try again"),
             }
         }
-        Err(_) => println!("There was an error, please try again"),
+        Some(("commit-msg-hook", _sub_matches)) => match init_commit_msg_hook() {
+            Ok(_) => println!("Pre-commit hook initialized!"),
+            Err(error) => println!("Error initializing pre-commit hook: {}", error),
+        },
+        Some(("check-commit", sub_matches)) => match sub_matches.get_one::<String>("message") {
+            Some(message) => match parse_commit(String::from(message)) {
+                Ok(commit) => {
+                    println!("commit: {:?}", commit);
+                }
+                Err(error) => {
+                    println!("error: {:?}", error);
+                    exit(1);
+                }
+            },
+            None => {
+                println!("No message provided");
+                exit(1);
+            }
+        },
+        _ => unreachable!(),
     }
 }
