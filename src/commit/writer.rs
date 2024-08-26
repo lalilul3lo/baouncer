@@ -117,11 +117,8 @@ mod tests {
 
         let commit_writer = CommitWriter::new(mock_runner);
 
-        match commit_writer.write_commit(commit) {
-            Err(_) => {
-                panic!("Expected Ok(), got error");
-            }
-            _ => {}
+        if commit_writer.write_commit(commit).is_err() {
+            panic!("Expected Ok(), got error");
         }
     }
 }

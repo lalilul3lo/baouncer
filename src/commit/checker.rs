@@ -58,13 +58,13 @@ pub fn init_commit_msg_hook() -> std::io::Result<()> {
     let script = format!("#!/usr/bin/env sh\n\ncommit_message=$(grep -v '^#' \"$1\")\n\n{} check-commit -m \"$commit_message\"\n", crate_name);
 
     // Write the script to the file
-    let mut file = fs::File::create(&git_hook_path)?;
+    let mut file = fs::File::create(git_hook_path)?;
     file.write_all(script.as_bytes())?;
 
     // Make the script executable
     let mut permissions = file.metadata()?.permissions();
     permissions.set_mode(0o755); // -rwxr-xr-x
-    fs::set_permissions(&git_hook_path, permissions)?;
+    fs::set_permissions(git_hook_path, permissions)?;
 
     println!(
         "Successfully created commit-msg hook at {:?}",
