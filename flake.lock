@@ -25,7 +25,7 @@
         "nixpkgs": [
           "nixpkgs"
         ],
-        "rust-analyzer-src": []
+        "rust-analyzer-src": "rust-analyzer-src"
       },
       "locked": {
         "lastModified": 1724135364,
@@ -81,6 +81,23 @@
         "fenix": "fenix",
         "flake-utils": "flake-utils",
         "nixpkgs": "nixpkgs"
+      }
+    },
+    "rust-analyzer-src": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1727104575,
+        "narHash": "sha256-lB/ZS0SnHyE8Z3G8DIL/QJPg6w6x5ZhgVO2pBqnz89g=",
+        "owner": "rust-lang",
+        "repo": "rust-analyzer",
+        "rev": "3d0343251fe084b335b55c17a52bb4a3527b1bd0",
+        "type": "github"
+      },
+      "original": {
+        "owner": "rust-lang",
+        "ref": "nightly",
+        "repo": "rust-analyzer",
+        "type": "github"
       }
     },
     "systems": {

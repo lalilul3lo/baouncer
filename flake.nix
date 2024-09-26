@@ -12,7 +12,6 @@
     fenix = {
       url = "github:nix-community/fenix";
       inputs.nixpkgs.follows = "nixpkgs";
-      inputs.rust-analyzer-src.follows = "";
     };
 
     flake-utils.url = "github:numtide/flake-utils";
@@ -118,8 +117,12 @@
           # Extra inputs can be added here; cargo and rustc are provided by default.
           packages = [
             baouncer
-            # pkgs.ripgrep
+            fenix.packages.${system}.rust-analyzer
           ];
+          env = {
+            # Required by rust-analyzer
+            RUST_SRC_PATH = "${fenix.packages.${system}.stable.rust-src}/lib/rustlib/src/rust/library";
+          };
         };
       });
 }
