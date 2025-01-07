@@ -1,5 +1,5 @@
 {
-  description = "Flake for baouncer cli";
+  description = "baouncer cli flake";
 
   inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
 
@@ -34,9 +34,12 @@
           mkShell {
             buildInputs = [
               nix-lsp-server
+              pest-ide-tools
+              cargo-nextest
               rust-analyzer
               openssl
-              rust-bin.beta.latest.default
+              pkg-config # needed by openssl to locate headers and libraries
+              rust-bin.stable.latest.default
             ];
           };
       }
