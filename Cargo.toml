@@ -5,7 +5,7 @@ edition = "2021"
 descriptionn = "An interactive CLI for creating conventional commits"
 
 [workspace]
-memebers = [".", "cc_scanner"]
+memebers = [".", "cc-scanner"]
 resolver = "2"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html

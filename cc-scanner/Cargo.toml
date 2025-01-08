@@ -1,5 +1,5 @@
 [package]
-name = "cc_scanner"
+name = "cc-scanner"
 version = "0.1.0"
 edition = "2021"
 
