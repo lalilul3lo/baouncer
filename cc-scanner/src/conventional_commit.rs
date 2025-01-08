@@ -74,7 +74,7 @@ impl From<&str> for Separator {
     fn from(value: &str) -> Self {
         match value {
             ": " => Self::Colon,
-            "# " => Self::Pound,
+            " #" => Self::Pound,
             ":\n" | ":\r" | ":\r\n" => Self::ColonWithNewline,
             other => unreachable!("Unrecognized footer token separator: `{}`", other),
         }

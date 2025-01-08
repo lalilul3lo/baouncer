@@ -7,27 +7,25 @@ use crate::parser::Rule;
 #[derive(Debug, PartialEq, Error)]
 pub struct ParseError {
     pub kind: ParseErrorKind,
-    pub inner: PestError<Rule>,
+    pub inner: Box<PestError<Rule>>,
 }
 
 #[derive(Debug, PartialEq, Error)]
 #[non_exhaustive]
 pub enum ParseErrorKind {
-    #[error("Err")]
+    #[error("Invalid commit type. Commit type should be ASCII_ALPHA.")]
     InvalidCommitType,
-    #[error("Err")]
+    #[error("Invalid scope delimiter. Scope should be enclosed within a pair of parenthesis. Example: (neovim).")]
     InvalidScopeDelimiter,
-    #[error("Err")]
-    InvalidTerminalSeparator,
-    #[error("Err")]
-    InvalidTokenSeparator,
-    #[error("Err")]
+    #[error("Invalid scope token. Token should be a noun describing a section of the codebase.")]
     InvalidScopeNoun,
-    #[error("Err")]
+    #[error("Invalid footer token separator.")]
+    InvalidTokenSeparator,
+    #[error("Invalid commit description")]
     InvalidDescription,
-    #[error("Err")]
+    #[error("Invalid commit body")]
     InvalidBody,
-    #[error("Err")]
+    #[error("Invalid commit footer")]
     InvalidFooter,
     #[error("Err")]
     Other,
@@ -60,7 +58,7 @@ impl From<PestError<Rule>> for ParseError {
 
         ParseError {
             kind,
-            inner: pest_error,
+            inner: Box::new(pest_error),
         }
     }
 }
