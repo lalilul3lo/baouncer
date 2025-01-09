@@ -1,5 +1,5 @@
 mod commit;
-use clap::{arg, Command};
+use clap::{arg, crate_description, Command};
 use commit::{
     builder::CommitBuilder,
     checker::{init_commit_msg_hook, parse_commit},
@@ -10,7 +10,7 @@ use std::process::exit;
 
 fn cli() -> Command {
     Command::new("cli")
-        .about("CLI for creating conventional commits")
+        .about(crate_description!())
         .subcommand_required(true)
         .arg_required_else_help(true)
         .allow_external_subcommands(true)

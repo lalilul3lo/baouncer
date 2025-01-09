@@ -1,0 +1,31 @@
+blank_line                = @{ NEWLINE ~ NEWLINE }
+breaking_change_indicator =  { "!" }
+breaking_change_token     =  { "BREAKING CHANGE" | "BREAKING-CHANGE" }
+colon_separator           = @{ semi_colon ~ whitespace }
+left_parens               = _{ "(" }
+right_parens              = _{ ")" }
+semi_colon                =  { ":" }
+whitespace                =  { " " }
+no_whitespace             = ${ !WHITE_SPACE }
+
+/// Header
+commit_type = @{ ASCII_ALPHA+ }
+description =  { (!NEWLINE ~ ANY)+ }
+scope       =  { (left_parens ~ scope_token ~ right_parens) }
+scope_token =  { (no_whitespace ~ ASCII_ALPHA)+ }
+header      =  { commit_type ~ scope? ~ breaking_change_indicator? ~ colon_separator ~ description }
+
+/// Body
+body = { (!(blank_line+ ~ footer) ~ ANY)+ }
+
+/// Footer
+footer_token_separator =  { ":" ~ (" " | NEWLINE) | " #" }
+footer_token           =  { breaking_change_token | (!footer_token_separator ~ (ASCII_ALPHANUMERIC | "-"))+ }
+footers                =  { (footer ~ NEWLINE)* ~ footer }
+footer_content         =  { (!(NEWLINE ~ footer) ~ ANY)+ }
+footer                 = ${ footer_token ~ footer_token_separator ~ footer_content }
+
+/// All together
+conventional_commit = {
+    SOI ~ header ~ (blank_line+ ~ (footers | (body ~ blank_line ~ footers?) | body))? ~ EOI
+}

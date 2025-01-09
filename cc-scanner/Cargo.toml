@@ -1,0 +1,14 @@
+[package]
+name = "cc-scanner"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+pest = {version = "2.7.15", features=["miette-error", "pretty-print"]}
+pest_derive = "2.7.15"
+strum = "0.26"
+strum_macros = "0.26"
+thiserror = { version = "2" }
+
+[dev-dependencies]
+indoc = "2.0"
