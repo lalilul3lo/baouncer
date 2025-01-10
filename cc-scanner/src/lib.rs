@@ -156,7 +156,6 @@ pub fn parse_footer(subject: &str) -> Result<Footer, ParseError> {
             Ok(Footer::from(pair))
         }
         Err(pest_error) => {
-            println!("{:#?} HELPME::OOPS", pest_error);
             Err(ParseError::from(pest_error))
         }
     }
