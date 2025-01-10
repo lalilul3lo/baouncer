@@ -1,6 +1,6 @@
 use baouncer::{
     command_line, config, git, logger,
-    prompt::{confirm_commit, execute_prompts, InteractivePrompt},
+    prompt::{confirm_commit, execute_prompts, PromptSubmissions},
 };
 use cc_scanner::{conventional_commit::ConventionalCommit, parse_commit};
 
@@ -21,25 +21,25 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
             for submission in submissions {
                 match submission {
-                    InteractivePrompt::Type { answer } => {
+                    PromptSubmissions::Type { answer } => {
                         commit.set_commit_type(answer);
                     }
-                    InteractivePrompt::Scope { answer } => {
+                    PromptSubmissions::Scope { answer } => {
                         commit.set_scope(answer);
                     }
-                    InteractivePrompt::Subject { answer } => {
+                    PromptSubmissions::Subject { answer } => {
                         commit.set_description(answer);
                     }
-                    InteractivePrompt::Body { answer } => {
+                    PromptSubmissions::Body { answer } => {
                         commit.set_body(answer);
                     }
-                    InteractivePrompt::IsBreaking { answer } => {
+                    PromptSubmissions::IsBreaking { answer } => {
                         commit.set_breaking_change(answer);
                     }
-                    InteractivePrompt::Issues { answer } => {
+                    PromptSubmissions::Issues { answer } => {
                         commit.set_footers(answer);
                     }
-                    InteractivePrompt::Footers { answer } => {
+                    PromptSubmissions::Footers { answer } => {
                         commit.set_footers(answer);
                     }
                 }
