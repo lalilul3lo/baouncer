@@ -10,7 +10,7 @@ use inquire::{error::InquireResult, required, Confirm, Editor, InquireError, Sel
 use crate::gh_cli;
 
 #[derive(Clone)]
-pub enum InteractivePrompt {
+pub enum PromptSubmissions {
     Type { answer: CommitType },
     Scope { answer: Scope },
     Subject { answer: String },
@@ -20,8 +20,8 @@ pub enum InteractivePrompt {
     Footers { answer: Vec<Footer> },
 }
 
-pub fn execute_prompts(config: Config) -> Result<Vec<InteractivePrompt>, InquireError> {
-    let mut prompts: Vec<InteractivePrompt> = vec![InteractivePrompt::Type {
+pub fn execute_prompts(config: Config) -> Result<Vec<PromptSubmissions>, InquireError> {
+    let mut prompts: Vec<PromptSubmissions> = vec![PromptSubmissions::Type {
         answer: Select::new(
             "Select the type of change that you're committing",
             CommitType::variants(),
@@ -40,7 +40,7 @@ pub fn execute_prompts(config: Config) -> Result<Vec<InteractivePrompt>, Inquire
                 if !choice.is_empty() {
                     match parse_scope(&choice) {
                         Ok(scope) => {
-                            prompts.push(InteractivePrompt::Scope { answer: scope });
+                            prompts.push(PromptSubmissions::Scope { answer: scope });
 
                             ok = true;
                         }
@@ -64,11 +64,11 @@ pub fn execute_prompts(config: Config) -> Result<Vec<InteractivePrompt>, Inquire
             .with_default(false)
             .prompt_skippable()?
         {
-            prompts.push(InteractivePrompt::IsBreaking { answer: choice })
+            prompts.push(PromptSubmissions::IsBreaking { answer: choice })
         }
     }
 
-    prompts.push(InteractivePrompt::Subject {
+    prompts.push(PromptSubmissions::Subject {
         answer: Text::new("subject:")
             .with_validator(required!("subject is required"))
             .prompt()?,
@@ -87,7 +87,7 @@ pub fn execute_prompts(config: Config) -> Result<Vec<InteractivePrompt>, Inquire
             .prompt_skippable()?
         {
             if !choice.is_empty() {
-                prompts.push(InteractivePrompt::Body { answer: choice })
+                prompts.push(PromptSubmissions::Body { answer: choice })
             }
         }
     }
@@ -117,7 +117,7 @@ pub fn execute_prompts(config: Config) -> Result<Vec<InteractivePrompt>, Inquire
                 if !ans.is_empty() {
                     match parse_footers(&ans) {
                         Ok(footers) => {
-                            prompts.push(InteractivePrompt::Issues { answer: footers });
+                            prompts.push(PromptSubmissions::Issues { answer: footers });
                             ok = true;
                         }
                         Err(error) => {
