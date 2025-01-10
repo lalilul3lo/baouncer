@@ -1,9 +1,10 @@
 use crate::config::Config;
 use cc_scanner::{
-    conventional_commit::{CommitType, Footer, Scope},
+    conventional_commit::{CommitType, ConventionalCommit, Footer, Scope},
     parse_footers, parse_scope,
 };
-use inquire::{required, Confirm, Editor, InquireError, Select, Text};
+use colored::Colorize;
+use inquire::{error::InquireResult, required, Confirm, Editor, InquireError, Select, Text};
 
 #[cfg(feature = "gh_cli")]
 use crate::gh_cli;
@@ -137,6 +138,17 @@ pub fn execute_prompts(config: Config) -> Result<Vec<InteractivePrompt>, Inquire
     Ok(prompts)
 }
 
-// pub fn confirm_commit(commit: &ConventionalCommit) -> Result<InquireResult<bool>, InquireError> {
-//     Ok(Confirm::new().prompt())
-// }
+pub fn confirm_commit(mut commit: ConventionalCommit) -> InquireResult<bool> {
+    let fancy_prompt = format!(
+        "{} {}\n \n{}\n\n{} {}\n",
+        "┌─".bold().blue(),
+        "Ready to commit?".bold().blue(),
+        commit.as_str(),
+        "└─".bold().blue(),
+        "Press [Enter] to confirm or [Ctrl + C] to cancel".green()
+    );
+
+    Confirm::new(&format!("\n\n{}\n\n", fancy_prompt))
+        .with_default(true)
+        .prompt()
+}

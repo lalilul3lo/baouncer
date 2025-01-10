@@ -123,7 +123,7 @@ pub struct Scope {
 
 pub struct Description {}
 
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, Eq, PartialEq, Clone)]
 pub struct ConventionalCommit {
     pub commit_type: CommitType,
     pub scope: Option<Scope>,

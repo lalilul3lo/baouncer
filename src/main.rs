@@ -1,6 +1,6 @@
 use baouncer::{
     command_line, config, git, logger,
-    prompt::{execute_prompts, InteractivePrompt},
+    prompt::{confirm_commit, execute_prompts, InteractivePrompt},
 };
 use cc_scanner::{conventional_commit::ConventionalCommit, parse_commit};
 
@@ -45,14 +45,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 }
             }
 
-            if parse_commit(&commit.as_str()).is_ok() {
-                match git::commit(commit) {
-                    Ok(oid) => {
-                        println!("commit: ({:#?}) created", oid);
+            let parsed_commit = parse_commit(&commit.as_str())?;
+
+            match confirm_commit(parsed_commit) {
+                Ok(choice) => {
+                    if choice {
+                        git::commit(commit)?;
                     }
-                    Err(error) => {
-                        eprintln!("{}", error)
-                    }
+                }
+                Err(error) => {
+                    eprintln!("{}", error)
                 }
             }
         }

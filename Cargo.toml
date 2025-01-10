@@ -12,6 +12,7 @@ resolver = "2"
 
 [dependencies]
 cc-scanner = { path = "./cc-scanner" }
+colored = "3.0.0"
 clap = { version ="4.4.0", features= ["cargo"] }
 dirs = "5.0.1"
 env_logger = "0.11.6"

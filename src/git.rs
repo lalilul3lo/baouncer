@@ -1,6 +1,6 @@
 use cc_scanner::conventional_commit::ConventionalCommit;
+use colored::Colorize;
 use git2::{Oid, Reference, Repository};
-use log::info;
 use thiserror::Error;
 
 #[derive(Debug, Error)]
@@ -38,7 +38,12 @@ pub fn commit(mut commit: ConventionalCommit) -> Result<Oid, CommitError> {
     } else {
         let oid = repo.commit(Some("HEAD"), &sig, &sig, &commit.as_str(), &tree, parents)?;
 
-        info!("\n{}", commit.as_str());
+        println!(
+            "{} {} {}",
+            "commit".yellow(),
+            oid.to_string().yellow(),
+            "created".yellow()
+        );
 
         Ok(oid)
     }
