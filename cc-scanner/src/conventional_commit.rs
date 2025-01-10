@@ -105,8 +105,6 @@ impl Footer {
 impl From<Pair<'_, Rule>> for Footer {
     fn from(pairs: Pair<'_, Rule>) -> Self {
         let mut pair = pairs.into_inner();
-        println!("{:?}", pair);
-        // TODO: Error-handling
         let token = pair.next().unwrap().as_str().to_string();
         let separator = pair.next().unwrap().as_str();
         let content = pair.next().unwrap().as_str().to_string().trim().to_string();
