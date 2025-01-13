@@ -3,21 +3,22 @@ use baouncer::{
     prompt::{confirm_commit, execute_prompts, PromptSubmissions},
 };
 use cc_scanner::{conventional_commit::ConventionalCommit, parse_commit};
+use miette::{miette, Result};
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
+fn main() -> Result<()> {
     let cli = command_line::interface();
 
     let matches = cli.get_matches();
 
     logger::init(matches.get_flag("debug"), matches.get_flag("verbose"));
 
-    let config = config::init()?;
+    let config = config::init().map_err(|err| miette!("{}", err))?;
 
     match matches.subcommand() {
         Some(("commit", _)) => {
             let mut commit = ConventionalCommit::default();
 
-            let submissions = execute_prompts(config)?;
+            let submissions = execute_prompts(config).map_err(|err| miette!("{}", err))?;
 
             for submission in submissions {
                 match submission {
@@ -45,12 +46,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 }
             }
 
-            let parsed_commit = parse_commit(&commit.as_str())?;
+            let parsed_commit = parse_commit(&commit.as_str()).map_err(|err| miette!("{}", err))?;
 
             match confirm_commit(parsed_commit) {
                 Ok(choice) => {
                     if choice {
-                        git::commit(commit)?;
+                        git::commit(commit).map_err(|err| miette!("{}", err))?;
                     }
                 }
                 Err(error) => {

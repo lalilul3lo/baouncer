@@ -5,17 +5,18 @@ use std::{
     collections::HashMap,
     fs::{self},
     path::PathBuf,
+    sync::Arc,
 };
 use thiserror::Error;
 use toml;
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct CommitType {
     pub name: String,
     pub description: String,
     pub emoji: Option<String>,
 }
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct Config {
     pub commit_types: HashMap<String, CommitType>,
     pub scope: bool,
@@ -24,7 +25,8 @@ pub struct Config {
     pub issues: bool,
     pub footer: bool,
 }
-#[derive(Debug, Deserialize)]
+
+#[derive(Debug, Deserialize, Clone)]
 pub struct TomlConfig {
     pub commit_types: Vec<CommitType>,
     pub scope: bool,
@@ -117,7 +119,7 @@ impl Config {
         }
     }
 
-    fn merge(&mut self, config: TomlConfig) {
+    fn merge_commit_types(&mut self, config: TomlConfig) {
         if !config.commit_types.is_empty() {
             for commit_type in config.commit_types {
                 if self.commit_types.contains_key(&commit_type.name) {
@@ -146,13 +148,13 @@ impl Config {
     }
 }
 
-#[derive(Debug, Error)]
+#[derive(Debug, Error, Clone)]
 pub enum ConfigError {
     #[error("I/O error reading {path:?}: {source}")]
     IoError {
         path: PathBuf,
         #[source]
-        source: std::io::Error,
+        source: Arc<std::io::Error>,
     },
 
     #[error("TOML parse error in {path:?}: {source}")]
@@ -189,7 +191,7 @@ pub fn init() -> Result<Config, ConfigError> {
         match fs::read_to_string(path) {
             Ok(contents) => match toml::from_str::<TomlConfig>(&contents) {
                 Ok(cfg) => {
-                    base_config.merge(cfg);
+                    base_config.merge_commit_types(cfg.clone());
                 }
                 Err(toml_error) => {
                     let err = ConfigError::TomlError {
@@ -197,13 +199,15 @@ pub fn init() -> Result<Config, ConfigError> {
                         source: toml_error,
                     };
 
-                    debug!("{:?}", miette!(err));
+                    debug!("{:?}", miette!(err.clone()));
+
+                    return Err(err);
                 }
             },
             Err(io_error) => {
                 let err = ConfigError::IoError {
                     path: path.clone(),
-                    source: io_error,
+                    source: Arc::new(io_error),
                 };
 
                 debug!("{:?}", miette!(err));
