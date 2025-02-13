@@ -1,141 +1,152 @@
-use crate::config::Config;
 use cc_scanner::{
     conventional_commit::{CommitType, ConventionalCommit, Footer, Scope},
     parse_footers, parse_scope,
 };
 use colored::Colorize;
 use inquire::{error::InquireResult, required, Confirm, Editor, InquireError, Select, Text};
+use miette::{miette, Result};
 
 #[cfg(feature = "gh_cli")]
 use crate::gh_cli;
 
-#[derive(Clone)]
-pub enum PromptSubmissions {
-    Type { answer: CommitType },
-    Scope { answer: Scope },
-    Subject { answer: String },
-    Body { answer: String },
-    IsBreaking { answer: bool },
-    Issues { answer: Vec<Footer> },
-    Footers { answer: Vec<Footer> },
+#[derive(Debug, Clone)]
+pub enum Prompts {
+    Type,
+    Scope,
+    Subject,
+    Body,
+    IsBreaking,
+    Issues,
+    Footers,
+}
+impl From<&str> for Prompts {
+    fn from(value: &str) -> Self {
+        match value.to_ascii_lowercase().as_str() {
+            "type" => Self::Type,
+            "scope" => Self::Scope,
+            "subject" => Self::Subject,
+            "body" => Self::Body,
+            "is_breaking" => Self::IsBreaking,
+            "issues" => Self::Issues,
+            "footers" => Self::Footers,
+            _ => Self::Type, // FIX
+        }
+    }
 }
 
-pub fn execute_prompts(config: Config) -> Result<Vec<PromptSubmissions>, InquireError> {
-    let mut prompts: Vec<PromptSubmissions> = vec![PromptSubmissions::Type {
-        answer: Select::new(
-            "Select the type of change that you're committing",
-            CommitType::variants(),
-        )
-        .prompt()?,
-    }];
+fn to_miette(err: InquireError) -> miette::Report {
+    miette!("{}", err)
+}
 
-    if config.scope {
-        let mut ok = false;
+pub fn commit_type() -> Result<CommitType, miette::Report> {
+    Select::new(
+        "Select the type of change that you're committing",
+        CommitType::variants(),
+    )
+    .prompt()
+    .map_err(to_miette)
+}
 
-        while !ok {
-            if let Some(choice) = Text::new("scope:")
-                .with_help_message("a noun description")
-                .prompt_skippable()?
-            {
-                if !choice.is_empty() {
-                    match parse_scope(&choice) {
-                        Ok(scope) => {
-                            prompts.push(PromptSubmissions::Scope { answer: scope });
+pub fn scope() -> Result<Option<Scope>, miette::Report> {
+    let mut scope: Option<Scope> = None;
 
-                            ok = true;
-                        }
-                        Err(error) => {
-                            let miette_error = miette::Error::new(error.inner.into_miette());
+    while let Some(choice) = Text::new("scope:")
+        .with_help_message("a noun description")
+        .prompt_skippable()
+        .map_err(to_miette)?
+    {
+        // If the user provides an empty input, break out
+        if choice.is_empty() {
+            break;
+        }
 
-                            ok = false;
-
-                            eprintln!("{:?}", miette_error);
-                        }
-                    }
-                } else {
-                    ok = true
-                }
+        match parse_scope(&choice) {
+            Ok(answer) => {
+                scope = Some(answer);
+                // Break after successfully parsing a scope
+                break;
+            }
+            Err(error) => {
+                let miette_error = miette::Error::new(error.inner.into_miette());
+                eprintln!("{:?}", miette_error);
+                // Loop continues, allowing the user to re-enter a valid scope
             }
         }
     }
 
-    if config.is_breaking {
-        if let Some(choice) = Confirm::new("is breaking change:")
-            .with_default(false)
-            .prompt_skippable()?
-        {
-            prompts.push(PromptSubmissions::IsBreaking { answer: choice })
-        }
+    Ok(scope)
+}
+
+pub fn subject() -> Result<String, miette::Report> {
+    Text::new("subject:")
+        .with_validator(required!("subject is required"))
+        .prompt()
+        .map_err(to_miette)
+}
+
+pub fn body() -> Result<String, miette::Report> {
+    Text::new("body: ")
+        .with_help_message("contextual information about the code changes")
+        .with_formatter(&|submission| {
+            if submission.is_empty() {
+                String::from("<skipped>")
+            } else {
+                submission.into()
+            }
+        })
+        .prompt()
+        .map_err(to_miette)
+}
+
+pub fn breaking_change() -> Result<bool, miette::Report> {
+    Confirm::new("is breaking change:")
+        .with_default(false)
+        .prompt()
+        .map_err(to_miette)
+}
+
+pub fn issues() -> Result<Vec<Footer>, miette::Report> {
+    if cfg!(feature = "gh_cli") {
+        let result = gh_cli::prompt().map_err(to_miette)?;
+
+        Ok(result)
+    } else {
+        Ok(vec![])
     }
+}
 
-    prompts.push(PromptSubmissions::Subject {
-        answer: Text::new("subject:")
-            .with_validator(required!("subject is required"))
-            .prompt()?,
-    });
+pub fn footers() -> Result<Option<Vec<Footer>>, miette::Report> {
+    let mut footers: Option<Vec<Footer>> = None;
 
-    if config.body {
-        if let Some(choice) = Text::new("body: ")
-            .with_help_message("contextual information about the code changes")
-            .with_formatter(&|submission| {
-                if submission.is_empty() {
-                    String::from("<skipped>")
-                } else {
-                    submission.into()
-                }
-            })
-            .prompt_skippable()?
-        {
-            if !choice.is_empty() {
-                prompts.push(PromptSubmissions::Body { answer: choice })
+    while let Some(ans) = Editor::new("footer:")
+        .with_formatter(&|submission| {
+            if submission.is_empty() {
+                String::from("<skipped>")
+            } else {
+                submission.into()
+            }
+        })
+        .with_help_message("e.g. breaking change")
+        .prompt_skippable()
+        .map_err(to_miette)?
+    {
+        if ans.is_empty() {
+            break;
+        }
+
+        match parse_footers(&ans) {
+            Ok(answer) => {
+                footers = Some(answer);
+                break;
+            }
+            Err(error) => {
+                let miette_error = miette::Error::new(error.inner.into_miette());
+                eprintln!("{:?}", miette_error);
             }
         }
     }
 
-    #[cfg(feature = "gh_cli")]
-    if config.issues && cfg!(feature = "gh_cli") {
-        let result = gh_cli::prompt()?;
-
-        prompts.push(result)
-    }
-
-    if config.footer {
-        let mut ok = false;
-
-        while !ok {
-            if let Some(ans) = Editor::new("footer:")
-                .with_formatter(&|submission| {
-                    if submission.is_empty() {
-                        String::from("<skipped>")
-                    } else {
-                        submission.into()
-                    }
-                })
-                .with_help_message("e.g. breaking change")
-                .prompt_skippable()?
-            {
-                if !ans.is_empty() {
-                    match parse_footers(&ans) {
-                        Ok(footers) => {
-                            prompts.push(PromptSubmissions::Issues { answer: footers });
-                            ok = true;
-                        }
-                        Err(error) => {
-                            let miette_error = miette::Error::new(error.inner.into_miette());
-
-                            ok = false;
-
-                            eprintln!("{:?}", miette_error);
-                        }
-                    }
-                } else {
-                    ok = true;
-                }
-            }
-        }
-    }
-
-    Ok(prompts)
+    Ok(footers)
 }
 
 pub fn confirm_commit(mut commit: ConventionalCommit) -> InquireResult<bool> {

@@ -1,4 +1,3 @@
-use crate::prompt::PromptSubmissions;
 use cc_scanner::conventional_commit::{Footer, Separator};
 use inquire::{InquireError, MultiSelect};
 use serde::Deserialize;
@@ -30,7 +29,7 @@ fn get_issues() -> Vec<Issue> {
     serde_json::from_str(&output_str).expect("Failed to parse JSON from gh CLI")
 }
 
-pub fn prompt() -> Result<PromptSubmissions, InquireError> {
+pub fn prompt() -> Result<Vec<Footer>, InquireError> {
     if let Some(choices) = MultiSelect::new("Select issues", get_issues()).prompt_skippable()? {
         if !choices.is_empty() {
             let footers = vec![Footer {
@@ -43,9 +42,9 @@ pub fn prompt() -> Result<PromptSubmissions, InquireError> {
                     .join(", "),
             }];
 
-            return Ok(PromptSubmissions::Issues { answer: footers });
+            return Ok(footers);
         }
     }
 
-    Ok(PromptSubmissions::Issues { answer: vec![] })
+    Ok(vec![])
 }

@@ -1,6 +1,11 @@
 use baouncer::{
-    command_line, config, git, logger,
-    prompt::{confirm_commit, execute_prompts, PromptSubmissions},
+    command_line,
+    config::{self, ConfigPrompt},
+    git, logger,
+    prompt::{
+        body, breaking_change, commit_type, confirm_commit, footers, issues, scope, subject,
+        Prompts,
+    },
 };
 use cc_scanner::{conventional_commit::ConventionalCommit, parse_commit};
 use miette::{miette, Result};
@@ -18,30 +23,44 @@ fn main() -> Result<()> {
         Some(("commit", _)) => {
             let mut commit = ConventionalCommit::default();
 
-            let submissions = execute_prompts(config).map_err(|err| miette!("{}", err))?;
+            let mut sorted_prompts: Vec<ConfigPrompt> = config
+                .prompts
+                .values()
+                .cloned() // Clone each Prompt so we own it
+                .collect();
 
-            for submission in submissions {
-                match submission {
-                    PromptSubmissions::Type { answer } => {
-                        commit.set_commit_type(answer);
+            sorted_prompts.sort_by_key(|prompt| prompt.order);
+
+            for prompt in sorted_prompts {
+                match prompt.kind {
+                    Prompts::Type => {
+                        commit.set_commit_type(commit_type()?);
                     }
-                    PromptSubmissions::Scope { answer } => {
-                        commit.set_scope(answer);
+                    Prompts::Scope => {
+                        if let Some(choice) = scope()? {
+                            commit.set_scope(choice);
+                        }
                     }
-                    PromptSubmissions::Subject { answer } => {
-                        commit.set_description(answer);
+                    Prompts::Subject => {
+                        commit.set_description(subject()?);
                     }
-                    PromptSubmissions::Body { answer } => {
-                        commit.set_body(answer);
+                    Prompts::Body => {
+                        let choice = body()?;
+
+                        if !choice.is_empty() {
+                            commit.set_body(choice);
+                        }
                     }
-                    PromptSubmissions::IsBreaking { answer } => {
-                        commit.set_breaking_change(answer);
+                    Prompts::IsBreaking => {
+                        commit.set_breaking_change(breaking_change()?);
                     }
-                    PromptSubmissions::Issues { answer } => {
-                        commit.set_footers(answer);
+                    Prompts::Issues => {
+                        commit.set_footers(issues()?);
                     }
-                    PromptSubmissions::Footers { answer } => {
-                        commit.set_footers(answer);
+                    Prompts::Footers => {
+                        if let Some(choice) = footers()? {
+                            commit.set_footers(choice);
+                        }
                     }
                 }
             }
