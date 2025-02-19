@@ -39,7 +39,7 @@ pub struct Config {
     pub prompts: HashMap<String, ConfigPrompt>,
 }
 impl Config {
-    fn new() -> Self {
+    fn new(conventional_types: bool) -> Self {
         // add default commit types
         let mut commit_types = vec![
             CommitType {
@@ -53,8 +53,9 @@ impl Config {
                 emoji: Some("🐛".to_string()),
             },
         ];
+
         // add conventional commit style types if enabled
-        if cfg!(feature = "conventional_types") {
+        if conventional_types {
             commit_types.append(&mut vec![
                 CommitType {
                     name: "chore".to_string(),
@@ -246,8 +247,8 @@ pub fn validate_config(cfg: TomlConfig) -> Result<(), ConfigError> {
     Ok(())
 }
 
-pub fn init() -> Result<Config, ConfigError> {
-    let mut base_config = Config::new();
+pub fn init(conventional_types: bool) -> Result<Config, ConfigError> {
+    let mut base_config = Config::new(conventional_types);
 
     let mut config_paths: Vec<PathBuf> = vec![];
 
@@ -307,9 +308,8 @@ mod tests {
 
     /// Tests that constructing a new `Config` includes default commit types.
     #[test]
-    #[cfg(not(feature = "conventional_types"))]
     fn when_creating_a_new_config_it_should_contain_default_commit_types() {
-        let config = Config::new();
+        let config = Config::new(false);
 
         assert_eq!(config.commit_types.len(), 2);
         let feat_type = config.commit_types.get("feat").unwrap();
@@ -321,7 +321,7 @@ mod tests {
     /// Tests that constructing a new `Config` includes default prompts.
     #[test]
     fn when_creating_a_new_config_it_should_contain_default_prompts() {
-        let config = Config::new();
+        let config = Config::new(false);
 
         assert_eq!(config.prompts.len(), 2);
         let type_prompt = config.prompts.get("type").unwrap();
@@ -331,9 +331,8 @@ mod tests {
     }
 
     #[test]
-    #[cfg(feature = "conventional_types")]
     fn when_creating_a_new_config_with_configuration_enabled() {
-        let config = Config::new();
+        let config = Config::new(true);
 
         assert_eq!(config.commit_types.len(), 11);
         let feat_type = config.commit_types.get("feat").unwrap();
@@ -345,7 +344,7 @@ mod tests {
     /// Tests that `merge_commit_types` overrides existing commit types with new definitions.
     #[test]
     fn when_merging_commit_types_it_should_override_existing_definitions() {
-        let mut config = Config::new();
+        let mut config = Config::new(false);
         let description = "newly defined description";
         let toml_config = TomlConfig {
             commit_types: Some(vec![CommitType {
@@ -370,7 +369,7 @@ mod tests {
     /// Tests that `merge_commit_types` appends any commit types not already in the config.
     #[test]
     fn when_merging_commit_types_it_should_append_new_commit_types() {
-        let mut config = Config::new();
+        let mut config = Config::new(false);
         let toml_config = TomlConfig {
             commit_types: Some(vec![CommitType {
                 name: "docs".to_string(),
@@ -390,7 +389,7 @@ mod tests {
     /// Tests that `merge_prompts` overrides existing prompts with new definitions.
     #[test]
     fn when_merging_prompts_it_should_override_existing_prompts() {
-        let mut config = Config::new();
+        let mut config = Config::new(false);
         let toml_config = TomlConfig {
             commit_types: Some(vec![]),
             prompts: vec![TomlPrompt {
@@ -408,7 +407,7 @@ mod tests {
     /// Tests that `merge_prompts` adds prompts not previously in the config.
     #[test]
     fn when_merging_prompts_it_should_append_new_prompts() {
-        let mut config = Config::new();
+        let mut config = Config::new(false);
         let toml_config = TomlConfig {
             commit_types: Some(vec![]),
             prompts: vec![TomlPrompt {
