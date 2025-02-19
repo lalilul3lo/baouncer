@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use cc_scanner::{
     conventional_commit::{CommitType, ConventionalCommit, Footer, Scope},
     parse_footers, parse_scope,
@@ -6,6 +8,7 @@ use colored::Colorize;
 use inquire::{error::InquireResult, required, Confirm, Editor, InquireError, Select, Text};
 use miette::{miette, Result};
 
+use crate::config::CommitType as ConfigCommitType;
 #[cfg(feature = "gh_cli")]
 use crate::gh_cli;
 
@@ -38,10 +41,20 @@ fn to_miette(err: InquireError) -> miette::Report {
     miette!("{}", err)
 }
 
-pub fn commit_type() -> Result<CommitType, miette::Report> {
+pub fn commit_type(
+    commit_types: HashMap<String, ConfigCommitType>,
+) -> Result<CommitType, miette::Report> {
+    let mut filtered_commit_types: Vec<CommitType> = vec![];
+    let commit_types: Vec<ConfigCommitType> = commit_types.values().cloned().collect();
+    for value in commit_types {
+        let hit = CommitType::from(value.name.as_str());
+
+        filtered_commit_types.push(hit);
+    }
+
     Select::new(
         "Select the type of change that you're committing",
-        CommitType::variants(),
+        filtered_commit_types,
     )
     .prompt()
     .map_err(to_miette)

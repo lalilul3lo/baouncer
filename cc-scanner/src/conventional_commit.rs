@@ -19,12 +19,11 @@ pub enum CommitType {
     Ci,
     Custom(String),
 }
-// Can you define string enums. From and Display trait implementation might be able to be dried
 impl From<&str> for CommitType {
     fn from(commit_type: &str) -> Self {
         match commit_type.to_ascii_lowercase().as_str() {
             "feat" => CommitType::Feature,
-            "bug" => CommitType::Bug,
+            "fix" => CommitType::Bug, // -> TODO(@1): Brittle
             "chore" => CommitType::Chore,
             "revert" => CommitType::Revert,
             "per" => CommitType::Perf,
@@ -42,7 +41,7 @@ impl fmt::Display for CommitType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let commit_type_str = match self {
             CommitType::Feature => "feat",
-            CommitType::Bug => "bug",
+            CommitType::Bug => "fix", // -> TODO(@1): Brittle
             CommitType::Chore => "chore",
             CommitType::Revert => "revert",
             CommitType::Perf => "perf",
@@ -60,6 +59,22 @@ impl fmt::Display for CommitType {
 impl CommitType {
     pub fn variants() -> Vec<CommitType> {
         CommitType::iter().collect()
+    }
+    pub fn as_str(&self) -> &str {
+        match self {
+            CommitType::Feature => "feat",
+            CommitType::Bug => "fix",
+            CommitType::Chore => "chore",
+            CommitType::Revert => "revert",
+            CommitType::Perf => "perf",
+            CommitType::Doc => "doc",
+            CommitType::Style => "style",
+            CommitType::Refactor => "refactor",
+            CommitType::Test => "test",
+            CommitType::Build => "build",
+            CommitType::Ci => "ci",
+            CommitType::Custom(value) => value.as_str(),
+        }
     }
 }
 

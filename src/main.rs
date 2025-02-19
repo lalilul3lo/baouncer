@@ -17,7 +17,8 @@ fn main() -> Result<()> {
 
     logger::init(matches.get_flag("debug"), matches.get_flag("verbose"));
 
-    let config = config::init().map_err(|err| miette!("{}", err))?;
+    let config =
+        config::init(matches.get_flag("conventional_types")).map_err(|err| miette!("{}", err))?;
 
     match matches.subcommand() {
         Some(("commit", _)) => {
@@ -34,7 +35,7 @@ fn main() -> Result<()> {
             for prompt in sorted_prompts {
                 match prompt.kind {
                     Prompts::Type => {
-                        commit.set_commit_type(commit_type()?);
+                        commit.set_commit_type(commit_type(config.commit_types.clone())?);
                     }
                     Prompts::Scope => {
                         if let Some(choice) = scope()? {

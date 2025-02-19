@@ -27,6 +27,14 @@ pub fn interface() -> Command {
                 .action(ArgAction::SetTrue)
                 .global(true),
         )
+        .arg(
+            Arg::new("conventional_types")
+                .short('c')
+                .long("conventional_types")
+                .help("Include Angular style commit types")
+                .action(ArgAction::SetTrue)
+                .global(true),
+        )
         .subcommand(Command::new("commit").about("Create a conventional commit"))
         .subcommand(
             Command::new("commit-msg-hook")
