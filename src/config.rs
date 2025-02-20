@@ -34,12 +34,21 @@ pub struct ConfigPrompt {
     pub kind: Prompts,
 }
 #[derive(Debug, Clone)]
+pub struct ConfigArgs {
+    pub conventional_types: bool,
+    pub scope: bool,
+    pub body: bool,
+    pub is_breaking: bool,
+    pub footers: bool,
+    pub issues: bool,
+}
+#[derive(Debug, Clone)]
 pub struct Config {
     pub commit_types: HashMap<String, CommitType>,
     pub prompts: HashMap<String, ConfigPrompt>,
 }
 impl Config {
-    fn new(conventional_types: bool) -> Self {
+    fn new(args: ConfigArgs) -> Self {
         // add default commit types
         let mut commit_types = vec![
             CommitType {
@@ -55,8 +64,8 @@ impl Config {
         ];
 
         // add conventional commit style types if enabled
-        if conventional_types {
-            commit_types.append(&mut vec![
+        if args.conventional_types {
+            commit_types.extend(vec![
                 CommitType {
                     name: "chore".to_string(),
                     description: "Other changes that don't modify src or test files".to_string(),
@@ -112,7 +121,7 @@ impl Config {
             commit_types_hash.insert(commit_type.name.clone(), commit_type);
         }
 
-        let prompts = vec![
+        let mut prompts = vec![
             ConfigPrompt {
                 name: "type".to_string(),
                 order: 0,
@@ -124,6 +133,42 @@ impl Config {
                 kind: Prompts::Subject,
             },
         ];
+        if args.scope {
+            prompts.append(&mut vec![ConfigPrompt {
+                name: "scope".to_string(),
+                order: 2,
+                kind: Prompts::Scope,
+            }]);
+        }
+        if args.body {
+            prompts.append(&mut vec![ConfigPrompt {
+                name: "body".to_string(),
+                order: 3,
+                kind: Prompts::Body,
+            }]);
+        }
+        if args.is_breaking {
+            prompts.append(&mut vec![ConfigPrompt {
+                name: "is_breaking".to_string(),
+                order: 4,
+                kind: Prompts::IsBreaking,
+            }]);
+        }
+        if args.footers {
+            prompts.append(&mut vec![ConfigPrompt {
+                name: "footers".to_string(),
+                order: 5,
+                kind: Prompts::Footers,
+            }]);
+        }
+        if args.issues {
+            prompts.append(&mut vec![ConfigPrompt {
+                name: "issues".to_string(),
+                order: 6,
+                kind: Prompts::Issues,
+            }]);
+        }
+
         let mut prompts_hash = HashMap::new();
         for prompt in prompts {
             prompts_hash.insert(prompt.name.clone(), prompt);
@@ -247,8 +292,8 @@ pub fn validate_config(cfg: TomlConfig) -> Result<(), ConfigError> {
     Ok(())
 }
 
-pub fn init(conventional_types: bool) -> Result<Config, ConfigError> {
-    let mut base_config = Config::new(conventional_types);
+pub fn init(args: ConfigArgs) -> Result<Config, ConfigError> {
+    let mut base_config = Config::new(args);
 
     let mut config_paths: Vec<PathBuf> = vec![];
 
@@ -306,10 +351,21 @@ pub fn init(conventional_types: bool) -> Result<Config, ConfigError> {
 mod tests {
     use super::*;
 
+    fn default_args() -> ConfigArgs {
+        ConfigArgs {
+            conventional_types: false,
+            scope: false,
+            body: false,
+            is_breaking: false,
+            footers: false,
+            issues: false,
+        }
+    }
+
     /// Tests that constructing a new `Config` includes default commit types.
     #[test]
     fn when_creating_a_new_config_it_should_contain_default_commit_types() {
-        let config = Config::new(false);
+        let config = Config::new(default_args());
 
         assert_eq!(config.commit_types.len(), 2);
         let feat_type = config.commit_types.get("feat").unwrap();
@@ -321,7 +377,7 @@ mod tests {
     /// Tests that constructing a new `Config` includes default prompts.
     #[test]
     fn when_creating_a_new_config_it_should_contain_default_prompts() {
-        let config = Config::new(false);
+        let config = Config::new(default_args());
 
         assert_eq!(config.prompts.len(), 2);
         let type_prompt = config.prompts.get("type").unwrap();
@@ -332,7 +388,7 @@ mod tests {
 
     #[test]
     fn when_creating_a_new_config_with_configuration_enabled() {
-        let config = Config::new(true);
+        let config = Config::new(default_args());
 
         assert_eq!(config.commit_types.len(), 11);
         let feat_type = config.commit_types.get("feat").unwrap();
@@ -344,7 +400,7 @@ mod tests {
     /// Tests that `merge_commit_types` overrides existing commit types with new definitions.
     #[test]
     fn when_merging_commit_types_it_should_override_existing_definitions() {
-        let mut config = Config::new(false);
+        let mut config = Config::new(default_args());
         let description = "newly defined description";
         let toml_config = TomlConfig {
             commit_types: Some(vec![CommitType {
@@ -369,7 +425,7 @@ mod tests {
     /// Tests that `merge_commit_types` appends any commit types not already in the config.
     #[test]
     fn when_merging_commit_types_it_should_append_new_commit_types() {
-        let mut config = Config::new(false);
+        let mut config = Config::new(default_args());
         let toml_config = TomlConfig {
             commit_types: Some(vec![CommitType {
                 name: "docs".to_string(),
@@ -389,7 +445,7 @@ mod tests {
     /// Tests that `merge_prompts` overrides existing prompts with new definitions.
     #[test]
     fn when_merging_prompts_it_should_override_existing_prompts() {
-        let mut config = Config::new(false);
+        let mut config = Config::new(default_args());
         let toml_config = TomlConfig {
             commit_types: Some(vec![]),
             prompts: vec![TomlPrompt {
@@ -407,7 +463,7 @@ mod tests {
     /// Tests that `merge_prompts` adds prompts not previously in the config.
     #[test]
     fn when_merging_prompts_it_should_append_new_prompts() {
-        let mut config = Config::new(false);
+        let mut config = Config::new(default_args());
         let toml_config = TomlConfig {
             commit_types: Some(vec![]),
             prompts: vec![TomlPrompt {

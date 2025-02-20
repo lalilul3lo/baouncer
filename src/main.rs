@@ -1,6 +1,6 @@
 use baouncer::{
     command_line,
-    config::{self, ConfigPrompt},
+    config::{self, ConfigArgs, ConfigPrompt},
     git, logger,
     prompt::{
         body, breaking_change, commit_type, confirm_commit, footers, issues, scope, subject,
@@ -17,8 +17,15 @@ fn main() -> Result<()> {
 
     logger::init(matches.get_flag("debug"), matches.get_flag("verbose"));
 
-    let config =
-        config::init(matches.get_flag("conventional_types")).map_err(|err| miette!("{}", err))?;
+    let config = config::init(ConfigArgs {
+        conventional_types: matches.get_flag("conventional_types"),
+        scope: matches.get_flag("scope"),
+        body: matches.get_flag("body"),
+        is_breaking: matches.get_flag("is_breaking"),
+        footers: matches.get_flag("footers"),
+        issues: matches.get_flag("issues"),
+    })
+    .map_err(|err| miette!("{}", err))?;
 
     match matches.subcommand() {
         Some(("commit", _)) => {

@@ -52,6 +52,17 @@ pub fn commit_type(
         filtered_commit_types.push(hit);
     }
 
+    let commit_order = [
+        "feat", "fix", "chore", "docs", "style", "perf", "refactor", "build", "ci", "revert",
+        "test",
+    ];
+    filtered_commit_types.sort_by_key(|c| {
+        commit_order
+            .iter()
+            .position(|&t| t == c.as_str())
+            .unwrap_or(usize::MAX)
+    });
+
     Select::new(
         "Select the type of change that you're committing",
         filtered_commit_types,

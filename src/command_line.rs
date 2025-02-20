@@ -35,6 +35,41 @@ pub fn interface() -> Command {
                 .action(ArgAction::SetTrue)
                 .global(true),
         )
+        .arg(
+            Arg::new("scope")
+                .long("scope")
+                .help("")
+                .action(ArgAction::SetTrue)
+                .global(true),
+        )
+        .arg(
+            Arg::new("body")
+                .long("body")
+                .help("")
+                .action(ArgAction::SetTrue)
+                .global(true),
+        )
+        .arg(
+            Arg::new("is_breaking")
+                .long("is_breaking")
+                .help("")
+                .action(ArgAction::SetTrue)
+                .global(true),
+        )
+        .arg(
+            Arg::new("footers")
+                .long("footers")
+                .help("")
+                .action(ArgAction::SetTrue)
+                .global(true),
+        )
+        .arg(
+            Arg::new("issues")
+                .long("issues")
+                .help("")
+                .action(ArgAction::SetTrue)
+                .global(true),
+        )
         .subcommand(Command::new("commit").about("Create a conventional commit"))
         .subcommand(
             Command::new("commit-msg-hook")
