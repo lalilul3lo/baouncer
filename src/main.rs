@@ -11,13 +11,17 @@ use cc_scanner::{conventional_commit::ConventionalCommit, parse_commit};
 use miette::{miette, Result};
 
 fn main() -> Result<()> {
+    // initialize command line interface
     let cli = command_line::interface();
 
+    // parse arguments
     let matches = cli.get_matches();
 
+    // initialize logger
     logger::init(matches.get_flag("debug"), matches.get_flag("verbose"));
 
-    let config = config::init(ConfigArgs {
+    // initialize cli config
+    let cfg = config::init(ConfigArgs {
         conventional_types: matches.get_flag("conventional_types"),
         scope: matches.get_flag("scope"),
         body: matches.get_flag("body"),
@@ -27,22 +31,19 @@ fn main() -> Result<()> {
     })
     .map_err(|err| miette!("{}", err))?;
 
+    // match on subcommand
     match matches.subcommand() {
         Some(("commit", _)) => {
-            let mut commit = ConventionalCommit::default();
-
-            let mut sorted_prompts: Vec<ConfigPrompt> = config
-                .prompts
-                .values()
-                .cloned() // Clone each Prompt so we own it
-                .collect();
+            let mut sorted_prompts: Vec<ConfigPrompt> = cfg.prompts.values().cloned().collect();
 
             sorted_prompts.sort_by_key(|prompt| prompt.order);
+
+            let mut commit = ConventionalCommit::default();
 
             for prompt in sorted_prompts {
                 match prompt.kind {
                     Prompts::Type => {
-                        commit.set_commit_type(commit_type(config.commit_types.clone())?);
+                        commit.set_commit_type(commit_type(cfg.commit_types.clone())?);
                     }
                     Prompts::Scope => {
                         if let Some(choice) = scope()? {
@@ -73,8 +74,10 @@ fn main() -> Result<()> {
                 }
             }
 
+            // validate commit
             let parsed_commit = parse_commit(&commit.as_str()).map_err(|err| miette!("{}", err))?;
 
+            // display commit message and prompt user to write commit or abort
             match confirm_commit(parsed_commit) {
                 Ok(choice) => {
                     if choice {

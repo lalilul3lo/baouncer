@@ -388,7 +388,11 @@ mod tests {
 
     #[test]
     fn when_creating_a_new_config_with_configuration_enabled() {
-        let config = Config::new(default_args());
+        let config_args = ConfigArgs {
+            conventional_types: true,
+            ..default_args()
+        };
+        let config = Config::new(config_args);
 
         assert_eq!(config.commit_types.len(), 11);
         let feat_type = config.commit_types.get("feat").unwrap();
